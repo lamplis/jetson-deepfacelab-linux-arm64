@@ -12,4 +12,6 @@
 !/_internal/DeepFaceLab/**
 # (Optionally) also keep .gitkeep if needed
 !/_internal/.gitkeep
-workspace/data_dst.mp4
+
+*.mp4
+
