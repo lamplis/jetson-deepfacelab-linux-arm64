@@ -1,0 +1,15 @@
+# Ignore VENV
+/*-venv/*
+
+# Ignore everything in /workspace But keep the directory itself
+/workspace/*
+!/workspace/.gitkeep
+
+# Ignore everything in /_internal
+/_internal/*
+# ────────── But keep the DeepFaceLab directory and its content
+!/_internal/DeepFaceLab/
+!/_internal/DeepFaceLab/**
+# (Optionally) also keep .gitkeep if needed
+!/_internal/.gitkeep
+workspace/data_dst.mp4
