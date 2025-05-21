@@ -16,6 +16,7 @@ ENV_NAME="dfl-arm64-venv"
 PYTHON_VERSION="3.10"
 REQ_FILE="requirements-jetson.txt"
 EXTRA_INDEX_URL="https://pypi.jetson-ai-lab.dev/jp6/cu126"
+PIP_INDEX_URL="https://pypi.jetson-ai-lab.dev/jp6/cu126"
 JETSON_REPO_FILE="/etc/apt/sources.list.d/jetson-ffmpeg.list"
 
 #───────────────────────────────────────────────────────────────
@@ -95,44 +96,71 @@ echo "📦 Installing Jetson-optimized Python packages (binary only)..."
 # Optimized installation: clean cache, binary-only, Jetson index
 #───────────────────────────────────────────────────────────────
 
+echo "📦 Installing additional packages from requirements file: $REQ_FILE"
+python3 -m pip install \
+  --no-cache-dir \
+  --force-reinstall \
+  --no-index \
+  -r "$REQ_FILE"
+  
+
 # Ensure a clean pip install from Jetson AI Lab index
 # - no cache reuse
 # - force reinstall
 # - only binary wheels
 # - use custom index for JetPack compatibility
 
+rm -rf ~/.local/lib/python3.10/site-packages/tensorflow*
+
 python3 -m pip install \
   --no-cache-dir \
   --force-reinstall \
-  --only-binary=:all: \
-  --index-url "$EXTRA_INDEX_URL" \
-  tensorflow \
-  mediapipe \
-  opencv-python==4.11.0 \
-  cupy \
-  numpy
-
-python3 -c "import cv2; print(cv2.__version__); print(cv2.INTER_CUBIC)"
+  https://developer.download.nvidia.com/compute/redist/jp/v61/tensorflow/tensorflow-2.16.1+nv24.08-cp310-cp310-linux_aarch64.whl \
+  https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/e6d/a8e91fd7e5f79/opencv_python-4.11.0-py3-none-any.whl \
+  https://developer.download.nvidia.com/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
 
 echo "📦 Installing ffmpeg-python"
 python3 -m pip install ffmpeg-python==0.2.0
 
 echo "🧹 Uninstalling conflicting packages (e.g., jax)..."
-python3 -m pip uninstall -y jax || true
+#python3 -m pip uninstall -y jax || true
 
-echo "📦 Installing additional packages from requirements file: $REQ_FILE"
-python3 -m pip install -r "$REQ_FILE"
 
 #───────────────────────────────────────────────────────────────
-# Validate OpenCV installation
+# ✅ Post-install verification: TensorFlow GPU support on Jetson
 #───────────────────────────────────────────────────────────────
-echo "🧪 Verifying OpenCV installation..."
-if python3 -c "import cv2; print('✅ OpenCV version:', cv2.__version__); print('✅ INTER_CUBIC:', cv2.INTER_CUBIC)" 2>/dev/null; then
-  echo "✅ OpenCV module is operational."
-else
-  echo "❌ OpenCV test failed. 'cv2' may be broken or improperly installed." >&2
-  exit 1
-fi
+
+echo "🔍 Verifying TensorFlow GPU compatibility..."
+
+python3 - <<'EOF'
+import os
+import sys
+import tensorflow as tf
+
+print("📦 TensorFlow version:", tf.__version__)
+print("🔧 Git version:", getattr(tf, '__git_version__', 'unknown'))
+
+gpu_devices = tf.config.list_physical_devices('GPU')
+if not gpu_devices:
+    print("❌ ERROR: No GPU device detected by TensorFlow.")
+    print("💡 Tip: Ensure you're using a Jetson-compatible TensorFlow wheel (e.g., 2.18.0).")
+    print("🔗 Check available versions at: https://pypi.jetson-ai-lab.dev/jp6/cu126")
+    sys.exit(1)
+else:
+    print(f"✅ GPU detected: {gpu_devices[0].name}")
+
+# Check for known TensorFlow ops
+try:
+    print("🧪 Checking OpenCV + cv2 interoperability...")
+    import cv2
+    print("📷 OpenCV version:", getattr(cv2, '__version__', 'unknown'))
+    print("🔁 cv2.INTER_CUBIC value:", cv2.INTER_CUBIC)
+except Exception as e:
+    print("⚠️ OpenCV test failed:", str(e))
+    sys.exit(1)
+EOF
+
+echo "✅ All GPU and library checks passed successfully."
 
 #───────────────────────────────────────────────────────────────
 # Final Output
