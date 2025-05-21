@@ -2,130 +2,129 @@
 #───────────────────────────────────────────────────────────────
 # setup_env.sh
 #
-# Set up a Python virtual environment for DeepFaceLab on Jetson
-# - Adds NVIDIA FFmpeg repository (if missing)
-# - Installs minimal system dependencies
-# - Creates and activates a fresh Python venv
-# - Configures pip with Jetson AI Lab index
-# - Installs all required Python packages
+# Set up a virtual Python environment for DeepFaceLab on Jetson.
+# Installs Python packages using a local wheel cache and allows
+# a clean setup using the --clean flag.
 #───────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
-ENV_NAME="dfl-arm64-venv"
+#───────────────────────────────────────────────────────────────
+# Configuration
+#───────────────────────────────────────────────────────────────
+ENV_NAME="dfl-arm"
 PYTHON_VERSION="3.10"
-REQ_FILE="requirements-jetson.txt"
-EXTRA_INDEX_URL="https://pypi.jetson-ai-lab.dev/jp6/cu126"
-PIP_INDEX_URL="https://pypi.jetson-ai-lab.dev/jp6/cu126"
-JETSON_REPO_FILE="/etc/apt/sources.list.d/jetson-ffmpeg.list"
+PIP_INDEX_URL="https://pypi.jetson-ai-lab.dev/jp6/cu130/+simple"
+EXTRA_INDEX_URL="https://pypi.org/simple"
+CACHE_DIR="$HOME/.cache/dfl_wheels"
+WHEEL_URLS=(
+  "https://pypi.jetson-ai-lab.dev/jp6/cu128/+f/395/7b5d0bec560ae/opencv_python-4.11.0-py3-none-any.whl"
+  "https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/6ef/f643c0a7acda9/torch-2.7.0-cp310-cp310-linux_aarch64.whl"
+  "https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/190/d8dfbcf6c4d3c/cupy-14.0.0a1-cp310-cp310-linux_aarch64.whl"
+  "https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/5e2/8f3dca560ab6f/jaxlib-0.6.0.dev20250414-cp310-cp310-manylinux2014_aarch64.whl"
+)
+# "https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/311/d1539318c172c/tensorflow-2.18.0-cp310-cp310-linux_aarch64.whl"
+# https://developer.download.nvidia.com/compute/redist/jp/v61/tensorflow/tensorflow-2.16.1+nv24.08-cp310-cp310-linux_aarch64.whl
+# https://developer.download.nvidia.com/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
 
 #───────────────────────────────────────────────────────────────
-# Step 1: Configure APT repository (NVIDIA Jetson FFmpeg)
+# Parse optional flags
 #───────────────────────────────────────────────────────────────
-echo "🔎 Checking for NVIDIA Jetson FFmpeg repository..."
-
-if [[ ! -f "$JETSON_REPO_FILE" ]]; then
-  echo "📥 Adding NVIDIA Jetson FFmpeg repository to APT..."
-  sudo tee "$JETSON_REPO_FILE" > /dev/null <<EOF
-deb https://repo.download.nvidia.com/jetson/ffmpeg main main
-deb-src https://repo.download.nvidia.com/jetson/ffmpeg main main
-EOF
-else
-  echo "✅ NVIDIA FFmpeg repository already configured at $JETSON_REPO_FILE"
+CLEAN_INSTALL=false
+if [[ "${1:-}" == "--clean" ]]; then
+  CLEAN_INSTALL=true
 fi
 
 #───────────────────────────────────────────────────────────────
-# Step 2: Install required system dependencies
+# Clean system cache if requested
 #───────────────────────────────────────────────────────────────
-echo "🔄 Updating APT cache..."
-#sudo apt update
-
-echo "🛠️ Updating CA Certificates..."
-sudo apt install --only-upgrade ca-certificates
-
-
-echo "📦 Installing system packages: python3-venv, python3-pip, libatlas-base-dev"
-sudo apt install -y \
-  python3-venv \
-  python3-pip \
-  libatlas-base-dev \
-  libtesseract4			#required by OpenCV
-
-#───────────────────────────────────────────────────────────────
-# Step 3: Reset previous virtual environment if active
-#───────────────────────────────────────────────────────────────
-if [[ -n "${VIRTUAL_ENV-}" && $(type -t deactivate) == "function" ]]; then
-  echo "🔄 Deactivating currently active virtual environment: $VIRTUAL_ENV"
-  deactivate
+if $CLEAN_INSTALL; then
+  echo "🧹 Performing full clean of environment and caches..."
+  rm -rf "$ENV_NAME"
+  rm -rf "$CACHE_DIR"
+  rm -rf ~/.cache/pip ~/.config/pip ~/.local/lib/python$PYTHON_VERSION
+  find . -type d -name "__pycache__" -exec rm -rf {} +
+  sudo apt clean
+  echo "✅ Clean complete."
 fi
 
-echo "🗑️ Removing previous venv: $ENV_NAME (if exists)"
-rm -rf "$ENV_NAME"
+#───────────────────────────────────────────────────────────────
+# Install system requirements
+#───────────────────────────────────────────────────────────────
+echo "📦 Installing system dependencies..."
+sudo apt update
+sudo apt install -y python3-venv python3-pip libatlas-base-dev
 
 #───────────────────────────────────────────────────────────────
-# Step 4: Create and activate new virtual environment
+# Set up Python virtual environment
 #───────────────────────────────────────────────────────────────
-echo "📦 Creating new virtual environment: $ENV_NAME"
+if [[ -d "$ENV_NAME" ]]; then
+  echo "🔄 Removing existing virtual environment: $ENV_NAME"
+  rm -rf "$ENV_NAME"
+fi
+
+echo "📦 Creating virtual environment: $ENV_NAME"
 python3 -m venv "$ENV_NAME"
-
-echo "⚡ Activating virtual environment: $ENV_NAME"
 source "$ENV_NAME/bin/activate"
 
 #───────────────────────────────────────────────────────────────
-# Step 5: Configure pip to use Jetson AI Lab package index
+# Configure pip index
 #───────────────────────────────────────────────────────────────
-echo "🚀 Upgrading pip..."
-python3 -m pip install --upgrade pip
-
 echo "⚙️ Setting up pip configuration with Jetson AI Lab index..."
 mkdir -p "$HOME/.config/pip"
 cat > "$HOME/.config/pip/pip.conf" <<EOF
 [global]
-index-url = $EXTRA_INDEX_URL
-extra-index-url = https://pypi.org/simple
+index-url = $PIP_INDEX_URL
 EOF
-
+# extra-index-url = https://pypi.org/simple
 echo "✅ pip configuration written to: $HOME/.config/pip/pip.conf"
-cat "$HOME/.config/pip/pip.conf"
 
 #───────────────────────────────────────────────────────────────
-# Step 6: Install Python dependencies
+# Download wheels and dependencies to cache
 #───────────────────────────────────────────────────────────────
-echo "📦 Installing Jetson-optimized Python packages (binary only)..."
-#───────────────────────────────────────────────────────────────
-# Optimized installation: clean cache, binary-only, Jetson index
-#───────────────────────────────────────────────────────────────
+mkdir -p "$CACHE_DIR"
+echo "📦 Preloading wheels and dependencies to cache..."
 
-echo "📦 Installing additional packages from requirements file: $REQ_FILE"
+for url in "${WHEEL_URLS[@]}"; do
+  filename=$(basename "$url")
+  dest="$CACHE_DIR/$filename"
+  if [[ ! -f "$dest" ]]; then
+    echo "⬇️  Downloading $filename..."
+    wget -q --show-progress -O "$dest" "$url"
+  else
+    echo "✅ Using cached $filename"
+  fi
+
+  echo "📥 Resolving dependencies for: $filename"
+  python3 -m pip download \
+    --dest "$CACHE_DIR" \
+    --no-deps \
+    --only-binary=:all: \
+    "$dest"
+done
+
+#───────────────────────────────────────────────────────────────
+# Install all cached wheels
+#───────────────────────────────────────────────────────────────
+echo "📥 Installing wheel files..."
 python3 -m pip install \
-  --no-cache-dir \
+  ${CLEAN_INSTALL:+--no-cache-dir} \
   --force-reinstall \
-  --no-index \
-  -r "$REQ_FILE"
+  "$CACHE_DIR"/*.whl
+
+
+echo "📦 Installing additional packages from requirements file: requirements-jetson.txt"
+# --extra-index-url "$EXTRA_INDEX_URL" \
+python3 -m pip install \
+  ${CLEAN_INSTALL:+--no-cache-dir} \
+  -r "requirements-jetson.txt"
   
-
-# Ensure a clean pip install from Jetson AI Lab index
-# - no cache reuse
-# - force reinstall
-# - only binary wheels
-# - use custom index for JetPack compatibility
-
-rm -rf ~/.local/lib/python3.10/site-packages/tensorflow*
-
+echo "📥 Installing wheel files..."
 python3 -m pip install \
-  --no-cache-dir \
+  ${CLEAN_INSTALL:+--no-cache-dir} \
   --force-reinstall \
-  https://developer.download.nvidia.com/compute/redist/jp/v61/tensorflow/tensorflow-2.16.1+nv24.08-cp310-cp310-linux_aarch64.whl \
-  https://pypi.jetson-ai-lab.dev/jp6/cu126/+f/e6d/a8e91fd7e5f79/opencv_python-4.11.0-py3-none-any.whl \
-  https://developer.download.nvidia.com/compute/redist/jp/v61/pytorch/torch-2.5.0a0+872d972e41.nv24.08.17622132-cp310-cp310-linux_aarch64.whl
-
-echo "📦 Installing ffmpeg-python"
-python3 -m pip install ffmpeg-python==0.2.0
-
-echo "🧹 Uninstalling conflicting packages (e.g., jax)..."
-#python3 -m pip uninstall -y jax || true
-
-
+  --only-binary=:all: \
+  "$CACHE_DIR"/*.whl
 #───────────────────────────────────────────────────────────────
 # ✅ Post-install verification: TensorFlow GPU support on Jetson
 #───────────────────────────────────────────────────────────────
@@ -136,11 +135,12 @@ python3 - <<'EOF'
 import os
 import sys
 import tensorflow as tf
+import torch
+import cupy
 
 print("📦 TensorFlow version:", tf.__version__)
-print("🔧 Git version:", getattr(tf, '__git_version__', 'unknown'))
-
 gpu_devices = tf.config.list_physical_devices('GPU')
+
 if not gpu_devices:
     print("❌ ERROR: No GPU device detected by TensorFlow.")
     print("💡 Tip: Ensure you're using a Jetson-compatible TensorFlow wheel (e.g., 2.18.0).")
@@ -148,6 +148,13 @@ if not gpu_devices:
     sys.exit(1)
 else:
     print(f"✅ GPU detected: {gpu_devices[0].name}")
+
+print("✔️ torch version:", torch.__version__)
+assert torch.cuda.is_available(), "❌ PyTorch did not detect CUDA!"
+
+print("✔️ cupy version:", cupy.__version__)
+dev = cupy.cuda.Device()
+print("✔️ cupy CUDA device:", dev)
 
 # Check for known TensorFlow ops
 try:
