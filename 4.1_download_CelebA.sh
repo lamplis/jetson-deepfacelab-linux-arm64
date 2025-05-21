@@ -2,7 +2,7 @@
 source env.sh
 
 echo "🔻️Downloading..."
-wget -O /tmp/pretrain_CelebA.zip https://github.com/lamplis/jetson-deepfacelab-linux-arm64/releases/download/v1.0/pretrain_CelebA.zip
+wget -cO /tmp/pretrain_CelebA.zip https://github.com/lamplis/jetson-deepfacelab-linux-arm64/releases/download/v1.0/pretrain_CelebA.zip
 
 echo "📦️Unziping..."
 unzip -oq /tmp/pretrain_CelebA.zip -d /tmp/pretrain_CelebA && \
