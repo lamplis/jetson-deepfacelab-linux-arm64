@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-#conda activate deepfake
-cd ..
-export DFL_PYTHON="python3.7"
-export DFL_WORKSPACE="workspace/"
+# Resolve paths from this file so the scripts work no matter the caller's cwd.
+_ENV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$_ENV_DIR"
+
+export PATH="$HOME/miniconda3/envs/dfl-arm/bin:$PATH"
+export DFL_PYTHON="${DFL_PYTHON:-$HOME/miniconda3/envs/dfl-arm/bin/python}"
+export DFL_WORKSPACE="${DFL_WORKSPACE:-/home/lamplis/Workspace/DeepFake}"
 
 if [ ! -d "$DFL_WORKSPACE" ]; then
-    mkdir "$DFL_WORKSPACE"
-    mkdir "$DFL_WORKSPACE/data_src"
-    mkdir "$DFL_WORKSPACE/data_src/aligned"
-    mkdir "$DFL_WORKSPACE/data_src/aligned_debug"
-    mkdir "$DFL_WORKSPACE/data_dst"
-    mkdir "$DFL_WORKSPACE/data_dst/aligned"
-    mkdir "$DFL_WORKSPACE/data_dst/aligned_debug"
-    mkdir "$DFL_WORKSPACE/model"
+    mkdir -p "$DFL_WORKSPACE" \
+        "$DFL_WORKSPACE/data_src/aligned" \
+        "$DFL_WORKSPACE/data_src/aligned_debug" \
+        "$DFL_WORKSPACE/data_dst/aligned" \
+        "$DFL_WORKSPACE/data_dst/aligned_debug" \
+        "$DFL_WORKSPACE/model"
 fi
 
-export DFL_ROOT="./"
-export DFL_SRC="./DeepFaceLab"
+export DFL_ROOT="$_ENV_DIR/"
+export DFL_SRC="$_ENV_DIR/_internal/DeepFaceLab"

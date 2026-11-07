@@ -5,8 +5,8 @@ Jetson DeepFaceLab Linux ARM64
 
 This is a Linux-based version of **DeepFaceLab**, adapted for ARM64 platforms such as the **NVIDIA Jetson AGX Orin**.  
 This guide helps you set up the environment using `Miniconda` instead of Anaconda3 (lighter for embedded systems) and configures the project to run on Jetson with proper CUDA/cuDNN support.
-This the assembly of 2 forks of dead projects:
-- https://github.com/iperov/DeepFaceLab.git
+The DeepFaceLab sources come from:
+- https://github.com/lamplis/DFLplus.git
 - https://gitee.com/zhanghongwei_cmiot/DeepFaceLab_Linux.git 
 
 ---
