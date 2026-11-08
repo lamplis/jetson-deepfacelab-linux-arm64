@@ -17,7 +17,7 @@ Make sure Git and FFmpeg are installed on your Jetson system:
 
 ```bash
 sudo apt update
-sudo apt install -y git ffmpeg
+sudo apt install -y git ffmpeg fontconfig fonts-dejavu-core
 ````
 
 ---

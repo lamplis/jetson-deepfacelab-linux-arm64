@@ -5,7 +5,7 @@ cd "$_ENV_DIR"
 
 export PATH="$HOME/miniconda3/envs/dfl-arm/bin:$PATH"
 export DFL_PYTHON="${DFL_PYTHON:-$HOME/miniconda3/envs/dfl-arm/bin/python}"
-export DFL_WORKSPACE="${DFL_WORKSPACE:-/home/lamplis/Workspace/DeepFake}"
+export DFL_WORKSPACE="${DFL_WORKSPACE:-$_ENV_DIR/workspace}"
 
 if [ ! -d "$DFL_WORKSPACE" ]; then
     mkdir -p "$DFL_WORKSPACE" \
@@ -13,7 +13,8 @@ if [ ! -d "$DFL_WORKSPACE" ]; then
         "$DFL_WORKSPACE/data_src/aligned_debug" \
         "$DFL_WORKSPACE/data_dst/aligned" \
         "$DFL_WORKSPACE/data_dst/aligned_debug" \
-        "$DFL_WORKSPACE/model"
+        "$DFL_WORKSPACE/model" \
+        "$DFL_WORKSPACE/logs"
 fi
 
 export DFL_ROOT="$_ENV_DIR/"
