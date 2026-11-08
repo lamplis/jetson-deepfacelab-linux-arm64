@@ -95,6 +95,37 @@ Visit the following link for a step-by-step visual guide (in Chinese):
 
 ---
 
+## XSeg masks
+
+Each aligned JPEG stores two separate mask fields. SAEHD training reads the raster `xseg_mask` whenever it exists, and ignores polygons until that raster is rewritten.
+
+* `seg_ie_polys` — editable polygons (include keeps a region, exclude cuts a hole).
+* `xseg_mask` — the black-and-white mask produced by XSeg apply or by the face parser.
+
+Open the editor with `5_XSeg_data_src_mask_edit.sh` or `5_XSeg_data_dst_mask_edit.sh`.
+
+| Key | Action |
+| --- | --- |
+| `Q` / `W` | New polygon is include / exclude |
+| `1` `2` `3` | Show the photo and the polygons |
+| `4` | Mask baked from the polygons only |
+| `5` | Applied raster mask (no points) |
+| `` ` `` | Applied mask shaded over the photo |
+| `6` | Turn the applied mask into polygons. The outer contour is an include; each hole, often the open mouth, is an exclude. Delete that exclude to put the mouth back without redrawing the face. |
+| `7` | Replace polygons with one include from the 68 landmarks (jaw, then the eyebrow line, 27 points). The mouth interior is inside it. Inactive when the face has no 68-point landmarks. |
+| `8` | Rewrite `xseg_mask` from the current polygons |
+| `A` / `D` | Save and go to the previous / next image |
+
+`6` and `7` replace the polygons of the current image only. They do not run when you change image. `6` is inactive when the image has no applied mask. `8` updates the raster in memory; `A` or `D` writes it. Closing the window does not save.
+
+### Applying a mask to a whole faceset
+
+* `4.1_download_XSeg_generic.sh`, then `5_XSeg_generic_wf_data_src_apply.sh` or `5_XSeg_generic_wf_data_dst_apply.sh` — pretrained whole-face XSeg.
+* `5_XSeg_train.sh`, then `5_XSeg_data_src_mask_apply.sh` or `5_XSeg_data_dst_mask_apply.sh` — your own XSeg model. Training uses polygon-labeled faces when any exist.
+* `4.2_download_face_parser.sh`, then `5_XSeg_data_src_face_parse.sh` or `5_XSeg_data_dst_face_parse.sh` — BiSeNet ResNet18 ([yakhyo/face-parsing](https://github.com/yakhyo/face-parsing)). The weight is downloaded to `_internal/DeepFaceLab/model_face_parser/resnet18.onnx` and is not part of the git tree. `onnxruntime` comes from `requirements-jetson.txt`. The published wheel runs on CPU. Default `--inner-mouth include` keeps the oral cavity and teeth (CelebAMask-HQ class `mouth`). Pass `--inner-mouth exclude` on the `xseg parse` command to leave that cavity black while keeping the lips. Existing polygons are left in place.
+
+`5_XSeg_data_*_mask_remove.sh` deletes the polygons (`xseg remove_labels`). `5_XSeg_data_*_trained_mask_remove.sh` deletes the applied raster (`xseg remove`). The names are easy to swap.
+
 ## Notes for Jetson Users
 
 * TensorFlow must be compatible with JetPack (you can use Nvidia-provided wheels).
