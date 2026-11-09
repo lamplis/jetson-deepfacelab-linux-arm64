@@ -1,3 +1,6 @@
 [submodule "_internal/DeepFaceLab"]
 	path = _internal/DeepFaceLab
 	url = https://github.com/lamplis/DFLplus.git
+[submodule "third_party/face-parsing"]
+	path = third_party/face-parsing
+	url = https://github.com/yakhyo/face-parsing.git

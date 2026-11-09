@@ -3,5 +3,5 @@ source env.sh
 
 $DFL_PYTHON "$DFL_SRC/main.py" xseg parse \
     --input-dir "$DFL_WORKSPACE/data_dst/aligned" \
-    --model-file "$DFL_SRC/model_face_parser/resnet18.onnx" \
+    --model-file "$DFL_SRC/model_face_parser/resnet34.onnx" \
     --inner-mouth include
