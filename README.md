@@ -111,7 +111,7 @@ Open the editor with `5_XSeg_data_src_mask_edit.sh` or `5_XSeg_data_dst_mask_edi
 | `4` | Mask baked from the polygons only |
 | `5` | Applied raster mask (no points) |
 | `` ` `` | Applied mask shaded over the photo |
-| `6` | Turn the applied mask into polygons. The outer contour is an include; each hole, often the open mouth, is an exclude. Delete that exclude to put the mouth back without redrawing the face. |
+| `6` | Turn the applied mask into polygons that follow the mask edge. The outer contour is an include. When the face has 68 landmarks, the open-mouth hole is not turned into an exclude. Other holes stay excludes. |
 | `7` | Replace polygons with one include from the 68 landmarks (jaw, then the eyebrow line, 27 points). The mouth interior is inside it. Inactive when the face has no 68-point landmarks. |
 | `8` | Rewrite `xseg_mask` from the current polygons |
 | `A` / `D` | Save and go to the previous / next image |
